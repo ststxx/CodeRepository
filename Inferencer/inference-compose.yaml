@@ -1,0 +1,51 @@
+version: '3.1'
+
+services:
+  inference-service:
+    image: 10.100.1.32:5500/inferenceservice:0602.2
+    restart: on-failure
+    ports:
+      - 5020:5020
+    environment:
+      - ConnectionStrings__train_output_dir=/adams_data/trains/_test_trainoutputdir
+      - ConnectionStrings__classification_server=http://10.10.1.98:5021
+      - ConnectionStrings__detection_server=http://10.10.1.98:5022
+    volumes:
+      - adams-storage:/adams_data
+      
+  inference_worker_classification:
+    image: 10.100.1.32:5500/inferenceworkerclassification:0602.1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: on-failure
+    ports:
+      - 5021:5021
+    volumes:
+      - adams-storage:/adams_data
+
+  inference_worker_detection:
+    image: 10.100.1.32:5500/inferenceworkerdetection:0602.1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: on-failure
+    ports:
+      - 5022:5022
+    volumes:
+      - adams-storage:/adams_data
+
+volumes:
+  adams-storage:
+    driver_opts:
+      type: "nfs"
+      o: "addr=10.10.1.135,nolock,soft,rw"
+      device: ":/volume2/adams"
